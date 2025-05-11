@@ -1,0 +1,31 @@
+#@author EllE
+#@category Export
+#@keybinding
+#@menupath
+#@toolbar
+
+from ghidra.app.decompiler import DecompInterface
+from ghidra.util.task import ConsoleTaskMonitor
+import os
+
+decompiler = DecompInterface()
+decompiler.openProgram(currentProgram)
+
+functions = currentProgram.getFunctionManager().getFunctions(True)
+output_dir = askDirectory("Select Output Folder", "OK")
+output_file = os.path.join(output_dir.getAbsolutePath(), currentProgram.getName() + "_decompiled.txt")
+
+with open(output_file, "w") as f:
+    for function in functions:
+        try:
+            result = decompiler.decompileFunction(function, 30, ConsoleTaskMonitor())
+            if result and result.decompileCompleted():
+                f.write("/* Function: {} */\n".format(function.getName()))
+                f.write(result.getDecompiledFunction().getC())
+                f.write("\n\n")
+            else:
+                f.write("/* Failed to decompile: {} */\n\n".format(function.getName()))
+        except Exception as e:
+            f.write("/* Error decompiling {}: {} */\n\n".format(function.getName(), str(e)))
+
+print("All functions exported to: {}".format(output_file))
